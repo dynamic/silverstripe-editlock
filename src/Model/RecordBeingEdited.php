@@ -7,6 +7,7 @@ use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
 use SilverStripe\Forms\FormField;
 use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
 use SilverStripe\Security\PermissionProvider;
 use SilverStripe\Security\Security;
@@ -29,7 +30,7 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
     );
 
     private static $has_one = array(
-        'Editor' => 'Member'
+        'Editor' => Member::class,
     );
 
 
@@ -46,7 +47,6 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
         }
         $message = sprintf(
             _t(__CLASS__ . '.LOCKEDMESSAGE', 'Sorry, this record is currently being edited by %s. To avoid conflicts and data loss, editing will be locked until they are finished.'),
-            FormField::name_to_label($this->RecordClass),
             $editorString
         );
 
