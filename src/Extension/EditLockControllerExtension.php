@@ -1,4 +1,13 @@
 <?php
+
+namespace Sheadawson\Editlock\Extension;
+
+use Sheadawson\Editlock\Model\RecordBeingEdited;
+use SilverStripe\Control\Controller;
+use SilverStripe\Core\Config\Config;
+use SilverStripe\Core\Extension;
+use SilverStripe\Security\Security;
+
 /**
  * EditLockControllerExtension
  *
@@ -7,14 +16,14 @@
  **/
 class EditLockControllerExtension extends Extension
 {
-    
+
     private static $allowed_actions = array(
         'lock'
     );
-    
-    
+
+
     private static $lockedClasses = array();
-    
+
 
     /**
      * Updtes the edit form based on whether it is being edited or not
@@ -28,9 +37,9 @@ class EditLockControllerExtension extends Extension
         if ($record && !$record->canEdit()) {
             return $form;
         }
-        
+
         // check if all classes should be locked by default or a certain list
-        $lockedClasses = Config::inst()->get('EditLockControllerExtension', 'lockedClasses');
+        $lockedClasses = Config::inst()->get(EditLockControllerExtension::class, 'lockedClasses');
         if (!empty($lockedClasses)) {
             if (!in_array($record->ClassName, $lockedClasses)) {
                 return $form;
@@ -41,7 +50,7 @@ class EditLockControllerExtension extends Extension
         $beingEdited = RecordBeingEdited::get()->filter(array(
             'RecordID' => $record->ID,
             'RecordClass' => $record->ClassName,
-            'EditorID:not' => Member::currentUserID()
+            'EditorID:not' => Security::getCurrentUser()->ID
         ))->first();
 
         if ($beingEdited) {
@@ -74,7 +83,7 @@ class EditLockControllerExtension extends Extension
 
 
     /**
-     * Extension hook for LeftAndMain subclasses 
+     * Extension hook for LeftAndMain subclasses
      **/
     public function updateEditForm($form)
     {
@@ -106,7 +115,7 @@ class EditLockControllerExtension extends Extension
         $existing = RecordBeingEdited::get()->filter(array(
             'RecordID' => $id,
             'RecordClass' => $class,
-            'EditorID' => Member::currentUserID()
+            'EditorID' => Security::getCurrentUser()->ID
         ))->first();
 
         if ($existing) {
@@ -115,7 +124,7 @@ class EditLockControllerExtension extends Extension
             $lock = RecordBeingEdited::create(array(
                 'RecordID' => $id,
                 'RecordClass' => $class,
-                'EditorID' => Member::currentUserID()
+                'EditorID' => Security::getCurrentUser()->ID
             ));
             $lock->write();
         }

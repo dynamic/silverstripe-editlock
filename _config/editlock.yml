@@ -1,10 +1,10 @@
-LeftAndMain:
+SilverStripe\Admin\LeftAndMain:
   extensions:
-    - EditLockControllerExtension
+    - Sheadawson\Editlock\Extension\EditLockControllerExtension
   extra_requirements_javascript:
-    - 'editlock/javascript/editlock.js'
+    - 'sheadawson/silverstripe-editlock:javascript/editlock.js'
 GridFieldDetailForm_ItemRequest:
   extensions:
-    - EditLockControllerExtension
-EditLockControllerExtension:
+    - Sheadawson\Editlock\Extension\EditLockControllerExtension
+Sheadawson\Editlock\Extension\EditLockControllerExtension:
   lockedClasses:

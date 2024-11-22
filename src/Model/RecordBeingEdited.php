@@ -1,4 +1,16 @@
 <?php
+
+namespace Sheadawson\Editlock\Model;
+
+use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPRequest;
+use SilverStripe\Core\Injector\Injector;
+use SilverStripe\Forms\FormField;
+use SilverStripe\ORM\DataObject;
+use SilverStripe\Security\Permission;
+use SilverStripe\Security\PermissionProvider;
+use SilverStripe\Security\Security;
+
 /**
  * RecordBeingEdited
  *
@@ -10,7 +22,7 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
 
     private static $singular_name = "Record Being Edited";
     private static $plural_name = "Records Being Edited";
-    
+
     private static $db = array(
         'RecordClass' => 'Varchar',
         'RecordID' => 'Int',
@@ -33,7 +45,7 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
             $editorString .= " &lt;<a href='mailto:$editor->Email'>$editor->Email</a>&gt;";
         }
         $message = sprintf(
-            _t('RecordBeingEdited.LOCKEDMESSAGE', 'Sorry, this %s is currently being edited by %s. To avoid conflicts and data loss, editing will be locked until they are finished.'),
+            _t(__CLASS__ . '.LOCKEDMESSAGE', 'Sorry, this record is currently being edited by %s. To avoid conflicts and data loss, editing will be locked until they are finished.'),
             FormField::name_to_label($this->RecordClass),
             $editorString
         );
@@ -51,17 +63,17 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
 
     /**
      * Checks to see if the current user can and edit the record anyway
-     * @return Boolean
+     * @return bool
      **/
     public function canEditAnyway()
     {
-        return Permission::check('RECORDBEINGEDITED_EDITANYWAY') ? true : false;
+        return (bool)Permission::check('RECORDBEINGEDITED_EDITANYWAY');
     }
 
 
     /**
      * Checks to see if the current user can and has elected to edit the record anyway
-     * @return Boolaen
+     * @return bool
      **/
     public function isEditingAnyway()
     {
@@ -69,18 +81,22 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
             return false;
         }
 
-        $sessionVar = 'EditAnyway_' . Member::currentUserID() . '_' . $this->ID;
+        $request = Injector::inst()->get(HTTPRequest::class);
+        $session = $request->getSession();
+
+        $sessionVar = 'EditAnyway_' . Security::getCurrentUser()->ID . '_' . $this->ID;
         if (Controller::curr()->getRequest()->getVar('editanyway') == '1') {
-            Session::set($sessionVar, true);
+            $session->set($sessionVar, true);
+
             return true;
         }
-        return Session::get($sessionVar) ? true : false;
+        return (bool) $session->get($sessionVar);
     }
 
 
 
     /**
-     * @return Arary
+     * @return array
      **/
     public function providePermissions()
     {

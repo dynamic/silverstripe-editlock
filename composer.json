@@ -18,5 +18,16 @@
 	},
 	"support": {
 		"issues": "https://github.com/sheadawson/silverstripe-editlock/issues"
-	}
+	},
+    "autoload": {
+        "psr-4": {
+            "sheadawson\\Editlock\\": "src/"
+        }
+    },
+    "extra": {
+        "expose": [
+            "images",
+            "javascript"
+        ]
+    }
 }
