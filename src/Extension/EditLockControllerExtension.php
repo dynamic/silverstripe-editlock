@@ -2,10 +2,13 @@
 
 namespace Sheadawson\Editlock\Extension;
 
+use Psr\Container\NotFoundExceptionInterface;
 use Sheadawson\Editlock\Model\RecordBeingEdited;
 use SilverStripe\Control\Controller;
+use SilverStripe\Control\HTTPResponse;
 use SilverStripe\Core\Config\Config;
 use SilverStripe\Core\Extension;
+use SilverStripe\ORM\ValidationException;
 use SilverStripe\Security\Security;
 
 /**
@@ -16,18 +19,27 @@ use SilverStripe\Security\Security;
  **/
 class EditLockControllerExtension extends Extension
 {
+    /**
+     * @var array|string[]
+     */
+    private static array $allowed_actions = [
+        'lock',
+    ];
 
-    private static $allowed_actions = array(
-        'lock'
-    );
-
-
-    private static $lockedClasses = array();
+    /**
+     * @var array
+     */
+    private static $lockedClasses = [];
 
 
     /**
-     * Updtes the edit form based on whether it is being edited or not
-     **/
+     * Updates the edit form based on whether it is being edited or not
+     *
+     * @param $form
+     * @param $record
+     * @return HTTPResponse|void
+     * @throws NotFoundExceptionInterface
+     */
     public function updateForm($form, $record)
     {
         if (!$record) {
@@ -47,11 +59,11 @@ class EditLockControllerExtension extends Extension
         }
 
         // check if this record is being edited by another user
-        $beingEdited = RecordBeingEdited::get()->filter(array(
+        $beingEdited = RecordBeingEdited::get()->filter([
             'RecordID' => $record->ID,
             'RecordClass' => $record->ClassName,
-            'EditorID:not' => Security::getCurrentUser()->ID
-        ))->first();
+            'EditorID:not' => Security::getCurrentUser()->ID,
+        ])->first();
 
         if ($beingEdited) {
             if ($this->owner->getRequest()->getVar('editanyway') == '1') {
@@ -62,8 +74,8 @@ class EditLockControllerExtension extends Extension
             // the person editing it must have left the edit form, so delete the RecordBeingEdited
             if (strtotime($beingEdited->LastEdited) < (time() - 15)) {
                 $beingEdited->delete();
-            // otherwise, there must be someone currently editing this record, so make the form readonly
-            // unless they have permission to, and have chosen to edit anyway
+                // otherwise, there must be someone currently editing this record, so make the form readonly
+                // unless they have permission to, and have chosen to edit anyway
             } else {
                 if (!$beingEdited->isEditingAnyway()) {
                     $readonlyFields = $form->Fields()->makeReadonly();
@@ -84,8 +96,12 @@ class EditLockControllerExtension extends Extension
 
     /**
      * Extension hook for LeftAndMain subclasses
-     **/
-    public function updateEditForm($form)
+     *
+     * @param $form
+     * @return void
+     * @throws NotFoundExceptionInterface
+     */
+    public function updateEditForm($form): void
     {
         if ($record = $form->getRecord()) {
             $form = $this->updateForm($form, $record);
@@ -95,8 +111,12 @@ class EditLockControllerExtension extends Extension
 
     /**
      * Extension hook for GridFieldDetailForm_ItemRequest
-     **/
-    public function updateItemEditForm($form)
+     *
+     * @param $form
+     * @return void
+     * @throws NotFoundExceptionInterface
+     */
+    public function updateItemEditForm($form): void
     {
         if ($record = $form->getRecord()) {
             $form = $this->updateForm($form, $record);
@@ -106,26 +126,30 @@ class EditLockControllerExtension extends Extension
 
     /**
      * Handles ajax pings to create a RecordBeingEdited lock or update an existing one
-     **/
-    public function lock($request)
+     *
+     * @param $request
+     * @return void
+     * @throws ValidationException
+     */
+    public function lock($request): void
     {
         $id = (int)$request->postVar('RecordID');
         $class = $request->postVar('RecordClass');
 
-        $existing = RecordBeingEdited::get()->filter(array(
+        $existing = RecordBeingEdited::get()->filter([
             'RecordID' => $id,
             'RecordClass' => $class,
-            'EditorID' => Security::getCurrentUser()->ID
-        ))->first();
+            'EditorID' => Security::getCurrentUser()->ID,
+        ])->first();
 
         if ($existing) {
             $existing->write(false, false, true);
         } else {
-            $lock = RecordBeingEdited::create(array(
+            $lock = RecordBeingEdited::create([
                 'RecordID' => $id,
                 'RecordClass' => $class,
-                'EditorID' => Security::getCurrentUser()->ID
-            ));
+                'EditorID' => Security::getCurrentUser()->ID,
+            ]);
             $lock->write();
         }
     }

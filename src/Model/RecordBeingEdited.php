@@ -2,10 +2,10 @@
 
 namespace Sheadawson\Editlock\Model;
 
+use Psr\Container\NotFoundExceptionInterface;
 use SilverStripe\Control\Controller;
 use SilverStripe\Control\HTTPRequest;
 use SilverStripe\Core\Injector\Injector;
-use SilverStripe\Forms\FormField;
 use SilverStripe\ORM\DataObject;
 use SilverStripe\Security\Member;
 use SilverStripe\Security\Permission;
@@ -20,25 +20,43 @@ use SilverStripe\Security\Security;
  **/
 class RecordBeingEdited extends DataObject implements PermissionProvider
 {
+    /**
+     * @var string
+     */
+    private static string $table_name = 'RecordBeingEdited';
 
-    private static $singular_name = "Record Being Edited";
-    private static $plural_name = "Records Being Edited";
+    /**
+     * @var string
+     */
+    private static string $singular_name = "Record Being Edited";
 
-    private static $db = array(
+    /**
+     * @var string
+     */
+    private static string $plural_name = "Records Being Edited";
+
+    /**
+     * @var array|string[]
+     */
+    private static array $db = [
         'RecordClass' => 'Varchar',
         'RecordID' => 'Int',
-    );
+    ];
 
-    private static $has_one = array(
+    /**
+     * @var \class-string[]
+     */
+    private static array $has_one = [
         'Editor' => Member::class,
-    );
+    ];
 
 
     /**
      * Generates the edit lock warning message displayed to the user
-     * @return String
+     *
+     * @return string
      **/
-    public function getLockedMessage()
+    public function getLockedMessage(): string
     {
         $editor = $this->Editor();
         $editorString = $editor->getTitle();
@@ -63,9 +81,10 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
 
     /**
      * Checks to see if the current user can and edit the record anyway
+     *
      * @return bool
      **/
-    public function canEditAnyway()
+    public function canEditAnyway(): bool
     {
         return (bool)Permission::check('RECORDBEINGEDITED_EDITANYWAY');
     }
@@ -73,9 +92,11 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
 
     /**
      * Checks to see if the current user can and has elected to edit the record anyway
+     *
      * @return bool
-     **/
-    public function isEditingAnyway()
+     * @throws NotFoundExceptionInterface
+     */
+    public function isEditingAnyway(): bool
     {
         if (!$this->canEditAnyway()) {
             return false;
@@ -90,23 +111,22 @@ class RecordBeingEdited extends DataObject implements PermissionProvider
 
             return true;
         }
-        return (bool) $session->get($sessionVar);
+        return (bool)$session->get($sessionVar);
     }
-
 
 
     /**
      * @return array
      **/
-    public function providePermissions()
+    public function providePermissions(): array
     {
-        return array(
-            'RECORDBEINGEDITED_EDITANYWAY' => array(
+        return [
+            'RECORDBEINGEDITED_EDITANYWAY' => [
                 'name' => _t('RecordBeingEdited.PERMISSION_EDITANYWAY_DESCRIPTION', 'Edit a record that another user is editing'),
-                'help' => _t('RecordBeingEdited.PERMISSION_EDITANYWAY_HELP',  'Let\'s the user dismiss the edit lock and warning'),
+                'help' => _t('RecordBeingEdited.PERMISSION_EDITANYWAY_HELP', 'Let\'s the user dismiss the edit lock and warning'),
                 'category' => _t('RecordBeingEdited.PERMISSION_EDITANYWAY_CATEGORY', 'Content permissions'),
-                'sort' => 100
-            )
-        );
+                'sort' => 100,
+            ],
+        ];
     }
 }
